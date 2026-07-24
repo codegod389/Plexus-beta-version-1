@@ -1,0 +1,1879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Plexus · Drug Confirmation & First Aid</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700&display=swap" rel="stylesheet" />
+
+    <style>
+        /* ============================================================
+           1.  CSS VARIABLES
+           ============================================================ */
+        :root {
+            --primary: #7A0E0E;
+            --primary-light: #9E2B2B;
+            --primary-dark: #4F0808;
+            --accent: #D4AF37;
+            --bg-body: #EDEEF2;
+            --surface: #FFFFFF;
+            --surface-glass: rgba(255, 255, 255, 0.72);
+            --text-primary: #111118;
+            --text-secondary: #5B5B6B;
+            --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.02);
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.07);
+            --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.10);
+            --shadow-glow: 0 4px 24px rgba(122, 14, 14, 0.15);
+            --radius-sm: 8px;
+            --radius-md: 16px;
+            --radius-full: 60px;
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        /* ============================================================
+           2.  RESET & BASE
+           ============================================================ */
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+            width: 100%;
+            font-family: var(--font);
+            background: var(--bg-body);
+            color: var(--text-primary);
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            user-select: none;
+        }
+
+        /* ============================================================
+           3.  LOADING SCREEN
+           ============================================================ */
+        #loading-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: linear-gradient(145deg, #1a0404, var(--primary-dark));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.9s cubic-bezier(0.23, 1, 0.32, 1),
+                transform 0.9s cubic-bezier(0.23, 1, 0.32, 1);
+            will-change: transform, opacity;
+        }
+
+        #loading-screen.hidden {
+            opacity: 0;
+            transform: scale(1.05);
+            pointer-events: none;
+        }
+
+        #wing-canvas {
+            width: 200px;
+            height: 200px;
+            max-width: 45vw;
+            max-height: 45vw;
+            display: block;
+            margin-bottom: 28px;
+            filter: drop-shadow(0 16px 48px rgba(0, 0, 0, 0.4));
+        }
+
+        .loading-title {
+            font-size: clamp(2.6rem, 10vw, 4.2rem);
+            font-weight: 300;
+            letter-spacing: 10px;
+            color: #FFFFFF;
+            text-transform: uppercase;
+            font-family: var(--font);
+        }
+
+        .loading-sub {
+            font-size: clamp(0.7rem, 2vw, 0.9rem);
+            color: rgba(255, 255, 255, 0.35);
+            letter-spacing: 8px;
+            margin-top: 8px;
+            font-weight: 400;
+            text-transform: uppercase;
+        }
+
+        /* ============================================================
+           4.  MAIN APP
+           ============================================================ */
+        #app {
+            display: none;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+            max-width: 100%;
+            background: var(--bg-body);
+            position: relative;
+            overflow: hidden;
+        }
+
+        #app.active {
+            display: flex;
+        }
+
+        /* ============================================================
+           5.  HEADER
+           ============================================================ */
+        .header {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-shrink: 0;
+            min-height: 72px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+            box-shadow: var(--shadow-xs);
+            position: relative;
+            z-index: 10;
+            animation: slideDown 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header-logo {
+            width: 48px;
+            height: 48px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            cursor: default;
+        }
+
+        .header-logo:hover {
+            transform: scale(1.08) rotate(-3deg);
+        }
+
+        .header-logo svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+            filter: drop-shadow(0 2px 8px rgba(122, 14, 14, 0.15));
+        }
+
+        .header-title {
+            font-size: clamp(1.3rem, 4vw, 1.9rem);
+            font-weight: 500;
+            color: var(--primary);
+            letter-spacing: -0.5px;
+            font-family: var(--font);
+        }
+
+        .header-spacer {
+            flex: 1;
+        }
+
+        /* ============================================================
+           6.  CONTENT AREA
+           ============================================================ */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px 16px 100px;
+            background: var(--bg-body);
+            scroll-behavior: smooth;
+        }
+
+        .content::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .content::-webkit-scrollbar-thumb {
+            background: var(--primary-light);
+            border-radius: 8px;
+        }
+
+        .chat-area {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 760px;
+            margin: 0 auto;
+            padding-top: 4px;
+        }
+
+        /* ============================================================
+           7.  MESSAGES – Enhanced Design
+           ============================================================ */
+        .message {
+            padding: 16px 22px;
+            max-width: 88%;
+            word-wrap: break-word;
+            font-size: clamp(0.95rem, 1.6vw, 1.05rem);
+            line-height: 1.65;
+            animation: slideUpFade 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+            position: relative;
+            border-radius: 20px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .message:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        @keyframes slideUpFade {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.96);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .message.user {
+            background: var(--primary);
+            color: #FFFFFF;
+            align-self: flex-end;
+            border-bottom-right-radius: 6px;
+            box-shadow: var(--shadow-glow);
+        }
+
+        .message.assistant {
+            background: var(--surface);
+            color: var(--text-primary);
+            align-self: flex-start;
+            border-bottom-left-radius: 6px;
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            padding: 16px 18px 16px 14px;
+        }
+
+        .message.assistant .avatar {
+            width: 32px;
+            height: 32px;
+            flex-shrink: 0;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 2px;
+            box-shadow: 0 2px 8px rgba(122, 14, 14, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .message.assistant:hover .avatar {
+            transform: scale(1.05);
+        }
+
+        .message.assistant .avatar svg {
+            width: 18px;
+            height: 18px;
+            fill: #fff;
+        }
+
+        .message.assistant .bubble {
+            flex: 1;
+        }
+
+        .message img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 14px;
+            display: block;
+            margin: 6px 0 10px 0;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .message img:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.10);
+        }
+
+        .message .image-label {
+            font-size: 0.7rem;
+            opacity: 0.6;
+            margin-top: 2px;
+            display: block;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+        }
+
+        .message .timestamp {
+            font-size: 0.6rem;
+            opacity: 0.4;
+            margin-top: 8px;
+            display: block;
+            font-weight: 400;
+        }
+
+        .message.user .timestamp {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .message.assistant .timestamp {
+            color: var(--text-secondary);
+        }
+
+        /* Enhanced Support Info */
+        .support-info {
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(0, 0, 0, 0.06);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px 12px;
+            background: rgba(122, 14, 14, 0.04);
+            padding: 10px 14px;
+            border-radius: 10px;
+            color: var(--text-secondary);
+            transition: background 0.3s ease;
+        }
+
+        .support-info:hover {
+            background: rgba(122, 14, 14, 0.08);
+        }
+
+        .support-info .label {
+            font-weight: 600;
+            color: var(--primary);
+            font-size: 0.8rem;
+            letter-spacing: 0.3px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .support-info .label svg {
+            width: 16px;
+            height: 16px;
+            fill: none;
+            stroke: var(--primary);
+            stroke-width: 2;
+        }
+
+        .support-info a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.85rem;
+            transition: color 0.2s ease, text-decoration 0.2s ease;
+        }
+
+        .support-info a:hover {
+            color: var(--primary-dark);
+            text-decoration: underline;
+        }
+
+        /* Typing Indicator – Enhanced */
+        .typing-indicator {
+            display: inline-flex;
+            gap: 5px;
+            padding: 4px 0;
+        }
+
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background: var(--text-secondary);
+            border-radius: 50%;
+            animation: typingBounce 1.4s infinite both;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typingBounce {
+            0%,
+            60%,
+            100% {
+                transform: translateY(0);
+                opacity: 0.4;
+            }
+            30% {
+                transform: translateY(-8px);
+                opacity: 1;
+            }
+        }
+
+        /* ============================================================
+           8.  EMPTY STATE – Enhanced
+           ============================================================ */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            animation: slideUpFade 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .empty-state .icon-wrapper {
+            width: 80px;
+            height: 80px;
+            background: rgba(122, 14, 14, 0.04);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+            border: 1px solid rgba(122, 14, 14, 0.06);
+            transition: transform 0.4s ease, box-shadow 0.4s ease;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+
+        .empty-state .icon-wrapper:hover {
+            transform: scale(1.05) rotate(-2deg);
+            box-shadow: var(--shadow-md);
+        }
+
+        .empty-state .icon-wrapper svg {
+            width: 44px;
+            height: 44px;
+            fill: none;
+            stroke: var(--primary);
+            stroke-width: 1.5;
+            opacity: 0.6;
+        }
+
+        .empty-state .main-tagline {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.3px;
+            margin-top: 4px;
+        }
+
+        .empty-state .tagline-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .empty-state .sub-tagline {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+            letter-spacing: -0.1px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        /* ============================================================
+           9.  BOTTOM BAR – Enhanced with pulse on camera
+           ============================================================ */
+        .bottom-bar {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) scale(1);
+            width: calc(100% - 32px);
+            max-width: 760px;
+            background: var(--surface-glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: var(--radius-full);
+            padding: 6px 6px 6px 24px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 100;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.06),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8);
+            transition: box-shadow 0.4s ease, background 0.4s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            animation: slideUpBar 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        @keyframes slideUpBar {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(30px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0) scale(1);
+            }
+        }
+
+        .bottom-bar:focus-within {
+            box-shadow: 0 8px 48px rgba(122, 14, 14, 0.10),
+                inset 0 1px 0 rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.92);
+            transform: translateX(-50%) scale(1.02);
+        }
+
+        .bottom-bar .search-wrap {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            background: transparent;
+            border-radius: 40px;
+            padding: 0;
+        }
+
+        .bottom-bar .search-wrap input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 14px 4px;
+            font-size: clamp(1rem, 2vw, 1.1rem);
+            font-weight: 400;
+            outline: none;
+            color: var(--text-primary);
+            min-width: 0;
+            font-family: var(--font);
+            letter-spacing: -0.2px;
+            transition: color 0.3s ease;
+        }
+
+        .bottom-bar .search-wrap input::placeholder {
+            color: var(--text-secondary);
+            font-weight: 400;
+            opacity: 0.6;
+            transition: opacity 0.3s ease;
+        }
+
+        .bottom-bar .search-wrap input:focus::placeholder {
+            opacity: 0.3;
+        }
+
+        .bottom-bar .btn-camera {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: background 0.3s ease, color 0.3s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            background: rgba(0, 0, 0, 0.02);
+            color: var(--text-primary);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(122, 14, 14, 0.2);
+            }
+            50% {
+                box-shadow: 0 0 0 8px rgba(122, 14, 14, 0);
+            }
+        }
+
+        .bottom-bar .btn-camera:hover {
+            background: rgba(122, 14, 14, 0.08);
+            color: var(--primary);
+            transform: scale(1.05);
+            animation: none;
+        }
+
+        .bottom-bar .btn-camera:active {
+            transform: scale(0.90);
+        }
+
+        .bottom-bar .btn-camera .badge {
+            position: absolute;
+            top: -1px;
+            right: -1px;
+            width: 20px;
+            height: 20px;
+            background: var(--primary);
+            color: #fff;
+            border-radius: 50%;
+            font-size: 0.55rem;
+            font-weight: 600;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #fff;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .bottom-bar .btn-camera .badge.show {
+            display: flex;
+            animation: badgePop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes badgePop {
+            from {
+                transform: scale(0);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .bottom-bar .btn-send {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: none;
+            background: var(--primary);
+            color: #fff;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: background 0.3s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 0.3s ease, opacity 0.3s ease;
+            box-shadow: 0 4px 16px rgba(122, 14, 14, 0.25);
+        }
+
+        .bottom-bar .btn-send.show {
+            display: flex;
+            animation: sendPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes sendPop {
+            from {
+                transform: scale(0);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .bottom-bar .btn-send:hover {
+            background: var(--primary-dark);
+            box-shadow: 0 6px 24px rgba(122, 14, 14, 0.35);
+            transform: scale(1.05);
+        }
+
+        .bottom-bar .btn-send:active {
+            transform: scale(0.90);
+        }
+
+        /* ============================================================
+           10. CAMERA OVERLAY – Enhanced
+           ============================================================ */
+        #camera-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9998;
+            background: rgba(0, 0, 0, 0.92);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            animation: fadeIn 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        #camera-overlay.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.97);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        #camera-overlay video {
+            max-width: 100%;
+            max-height: 70vh;
+            border-radius: 28px;
+            background: #0a0a0a;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+            object-fit: cover;
+            aspect-ratio: 4/3;
+            width: auto;
+            height: auto;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            animation: scaleIn 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        @keyframes scaleIn {
+            from {
+                transform: scale(0.92);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        #camera-overlay .cam-controls {
+            display: flex;
+            gap: 24px;
+            margin-top: 32px;
+            flex-wrap: wrap;
+            justify-content: center;
+            animation: slideUpFade 0.5s cubic-bezier(0.23, 1, 0.32, 1) 0.1s both;
+        }
+
+        #camera-overlay .cam-controls button {
+            padding: 14px 36px;
+            border: none;
+            border-radius: 60px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 0.3s ease, background 0.3s ease;
+            font-family: var(--font);
+            min-width: 130px;
+            letter-spacing: 0.3px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #camera-overlay .cam-controls button:active {
+            transform: scale(0.94);
+        }
+
+        #camera-overlay .cam-controls button::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at center, rgba(255,255,255,0.3) 0%, transparent 80%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #camera-overlay .cam-controls button:hover::after {
+            opacity: 1;
+        }
+
+        #camera-overlay .btn-identify {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 4px 28px rgba(122, 14, 14, 0.4);
+        }
+
+        #camera-overlay .btn-identify:hover {
+            background: var(--primary-dark);
+            box-shadow: 0 6px 36px rgba(122, 14, 14, 0.5);
+            transform: scale(1.04);
+        }
+
+        #camera-overlay .btn-close-cam {
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(4px);
+        }
+
+        #camera-overlay .btn-close-cam:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: scale(1.04);
+        }
+
+        #camera-overlay .cam-status {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.85rem;
+            margin-top: 20px;
+            letter-spacing: 0.5px;
+            font-weight: 400;
+            animation: slideUpFade 0.5s cubic-bezier(0.23, 1, 0.32, 1) 0.2s both;
+        }
+
+        /* ============================================================
+           11. RESPONSIVE STYLES
+           ============================================================ */
+        @media (max-width: 480px) {
+            .header {
+                min-height: 60px;
+                padding: 0 16px;
+                gap: 12px;
+            }
+
+            .header-logo {
+                width: 40px;
+                height: 40px;
+            }
+
+            .content {
+                padding: 16px 12px 90px;
+            }
+
+            .bottom-bar {
+                bottom: 12px;
+                width: calc(100% - 24px);
+                padding: 4px 4px 4px 16px;
+                border-radius: 40px;
+            }
+
+            .bottom-bar .btn-camera,
+            .bottom-bar .btn-send {
+                width: 42px;
+                height: 42px;
+                font-size: 1rem;
+            }
+
+            .message {
+                max-width: 94%;
+                padding: 12px 16px;
+                font-size: 0.85rem;
+            }
+
+            .message.assistant {
+                padding: 12px 14px;
+                gap: 10px;
+            }
+
+            .message.assistant .avatar {
+                width: 26px;
+                height: 26px;
+            }
+
+            #camera-overlay video {
+                max-height: 50vh;
+                border-radius: 20px;
+            }
+
+            #camera-overlay .cam-controls button {
+                padding: 10px 20px;
+                font-size: 0.85rem;
+                min-width: 80px;
+            }
+
+            #wing-canvas {
+                width: 150px;
+                height: 150px;
+            }
+
+            .loading-title {
+                font-size: 2.2rem;
+                letter-spacing: 6px;
+            }
+
+            .empty-state .icon-wrapper {
+                width: 64px;
+                height: 64px;
+            }
+
+            .empty-state .icon-wrapper svg {
+                width: 32px;
+                height: 32px;
+            }
+
+            .empty-state .main-tagline {
+                font-size: 1.1rem;
+            }
+
+            .empty-state .sub-tagline {
+                font-size: 0.85rem;
+                flex-wrap: wrap;
+            }
+
+            .support-info {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .header-title {
+                font-size: 1rem;
+            }
+
+            #wing-canvas {
+                width: 120px;
+                height: 120px;
+            }
+
+            .loading-title {
+                font-size: 1.6rem;
+            }
+        }
+
+        /* Safe area for notched phones */
+        @supports (padding-bottom: env(safe-area-inset-bottom)) {
+            .bottom-bar {
+                padding-bottom: calc(6px + env(safe-area-inset-bottom));
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ============================================================
+    LOADING SCREEN
+    ============================================================ -->
+    <div id="loading-screen" role="status" aria-label="Loading Plexus">
+        <canvas id="wing-canvas" width="400" height="400"></canvas>
+        <div class="loading-title">Plexus</div>
+        <div class="loading-sub">Medical First Aid</div>
+    </div>
+
+    <!-- ============================================================
+    MAIN APP
+    ============================================================ -->
+    <div id="app">
+
+        <!-- ─── Header ─── -->
+        <header class="header">
+            <div class="header-logo" aria-label="Plexus Official Logo">
+                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="wingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#7A0E0E" />
+                            <stop offset="100%" stop-color="#4F0808" />
+                        </linearGradient>
+                        <linearGradient id="wingAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#D4AF37" stop-opacity="0.25" />
+                            <stop offset="100%" stop-color="#D4AF37" stop-opacity="0.05" />
+                        </linearGradient>
+                    </defs>
+                    <!-- Back layer -->
+                    <path d="M50 92 C18 70 6 44 12 28 C18 12 34 4 50 10 C66 4 82 12 88 28 C94 44 82 70 50 92Z" fill="url(#wingGrad)" opacity="0.15" />
+                    <path d="M50 84 C24 66 14 44 18 30 C22 16 38 10 50 16 C62 10 78 16 82 30 C86 44 76 66 50 84Z" fill="url(#wingGrad)" opacity="0.25" />
+                    <!-- Mid layer -->
+                    <path d="M50 76 C30 60 20 42 24 30 C28 18 42 12 50 18 C58 12 72 18 76 30 C80 42 70 60 50 76Z" fill="url(#wingGrad)" opacity="0.5" />
+                    <!-- Front layer -->
+                    <path d="M50 68 C36 54 28 40 32 30 C36 20 46 14 50 20 C54 14 64 20 68 30 C72 40 64 54 50 68Z" fill="url(#wingGrad)" opacity="0.85" />
+                    <!-- Accent -->
+                    <path d="M50 62 C40 50 34 40 38 32 C42 24 48 18 50 24 C52 18 58 24 62 32 C66 40 60 50 50 62Z" fill="url(#wingAccent)" stroke="#D4AF37" stroke-width="0.6" opacity="0.5" />
+                    <!-- Spine -->
+                    <path d="M50 58 C46 50 44 40 46 34 C48 28 50 26 50 26 C50 26 52 28 54 34 C56 40 54 50 50 58Z" fill="#FFFFFF" opacity="0.15" />
+                </svg>
+            </div>
+            <span class="header-title">Plexus</span>
+            <div class="header-spacer"></div>
+        </header>
+
+        <!-- ─── Content ─── -->
+        <div class="content" id="content">
+            <div class="chat-area" id="chatArea">
+                <div class="empty-state" id="emptyState">
+                    <div class="icon-wrapper">
+                        <svg viewBox="0 0 24 24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                            <path d="M2 17l10 5 10-5" />
+                            <path d="M2 12l10 5 10-5" />
+                        </svg>
+                    </div>
+                    <p class="main-tagline">Online Medical First Aid</p>
+                    <div class="tagline-group">
+                        <span class="sub-tagline">Scan your drug and get information</span>
+                        <span class="sub-tagline">Get emergency diagnosis of your condition</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── Bottom Bar ─── -->
+        <div class="bottom-bar">
+            <div class="search-wrap">
+                <input type="text" id="searchInput" placeholder="Search drug or symptom..." autocomplete="off" aria-label="Search input" />
+            </div>
+            <button class="btn-camera" id="btnCamera" aria-label="Open camera">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                    <circle cx="12" cy="13" r="4" />
+                </svg>
+                <span class="badge" id="camBadge">1</span>
+            </button>
+            <button class="btn-send" id="btnSend" aria-label="Send message">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13" />
+                    <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                </svg>
+            </button>
+        </div>
+
+    </div>
+
+    <!-- ============================================================
+    CAMERA OVERLAY
+    ============================================================ -->
+    <div id="camera-overlay">
+        <video id="cameraVideo" autoplay playsinline muted></video>
+        <div class="cam-controls">
+            <button class="btn-close-cam" id="btnCloseCam">Close</button>
+            <button class="btn-identify" id="btnIdentify">🔍 Identify Drug</button>
+        </div>
+        <div class="cam-status" id="camStatus">Frame your drug clearly</div>
+    </div>
+
+    <!-- ============================================================
+    JAVASCRIPT
+    ============================================================ -->
+    <script>
+        (function() {
+            'use strict';
+
+            /* =============================================================
+               1.  CONFIGURATION – Mistral for vision, Groq for text
+               ============================================================= */
+            // Groq for text chat
+            const GROQ_API_KEY = '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';
+            const GROQ_MODEL = 'llama-3.3-70b-versatile';
+            const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
+
+            // Mistral for drug image identification (new key)
+            const MISTRAL_API_KEY = 'gMX2M0xUUnxS17hhOeiWdqkxejttg8l8';
+            const MISTRAL_MODEL = 'pixtral-12b-2409'; // Mistral's vision model
+            const MISTRAL_ENDPOINT = 'https://api.mistral.ai/v1/chat/completions';
+
+            const CUSTOMER_EMAIL = 'ikechihyacinth@outlook.com';
+
+            /* =============================================================
+               2.  DOM REFERENCES
+               ============================================================= */
+            const $ = (id) => document.getElementById(id);
+
+            const loadingScreen = $('loading-screen');
+            const app = $('app');
+            const wingCanvas = $('wing-canvas');
+            const ctx = wingCanvas.getContext('2d');
+            const content = $('content');
+            const chatArea = $('chatArea');
+            const emptyState = $('emptyState');
+            const searchInput = $('searchInput');
+            const btnCamera = $('btnCamera');
+            const btnSend = $('btnSend');
+            const camBadge = $('camBadge');
+            const cameraOverlay = $('camera-overlay');
+            const cameraVideo = $('cameraVideo');
+            const btnIdentify = $('btnIdentify');
+            const btnCloseCam = $('btnCloseCam');
+            const camStatus = $('camStatus');
+
+            /* =============================================================
+               3.  STATE
+               ============================================================= */
+            const state = {
+                cameraStream: null,
+                isCameraActive: false,
+                imageData: null,
+                imageDataForApi: null,
+                messageCount: 0,
+                wingAngle: 0,
+                wingAnimId: null,
+                isProcessing: false,
+                conversationHistory: [], // for Groq: { role, content }
+                autoSendTimer: null,
+            };
+
+            const WING_CENTER_X = 200;
+            const WING_CENTER_Y = 200;
+
+            /* =============================================================
+               4.  WING ANIMATION
+               ============================================================= */
+            function drawWing(angle) {
+                ctx.clearRect(0, 0, 400, 400);
+
+                const cx = WING_CENTER_X;
+                const cy = WING_CENTER_Y;
+                const flap = Math.sin(angle) * 0.3 + 0.7;
+
+                const featherCount = 18;
+                const baseColors = [
+                    'rgba(255,255,255,0.95)',
+                    'rgba(255,255,255,0.85)',
+                    'rgba(255,255,255,0.75)',
+                    'rgba(255,255,255,0.65)',
+                    'rgba(255,255,255,0.55)',
+                    'rgba(255,255,255,0.45)',
+                    'rgba(255,255,255,0.35)',
+                    'rgba(255,255,255,0.25)',
+                    'rgba(255,255,255,0.15)',
+                ];
+
+                for (let i = featherCount - 1; i >= 0; i--) {
+                    const t = i / (featherCount - 1);
+                    const baseAngle = -0.9 + t * 1.8;
+                    const featherLen = 75 + t * 85 + 15 * Math.sin(angle * 0.5 + i * 0.6);
+                    const featherWidth = 10 + t * 30 + 6 * Math.sin(angle * 0.4 + i * 0.4);
+                    const spread = 1.0 - 0.1 * (1 - t) * (1 - Math.sin(angle * 0.5 + i * 0.5) * 0.2);
+                    const currentAngle = baseAngle * spread;
+                    const colorIndex = Math.min(Math.floor(t * baseColors.length), baseColors.length - 1);
+                    const alpha = 0.8 + 0.2 * (1 - t);
+
+                    const flapAngle = (1 - flap) * 0.6 * (0.5 + t * 0.5);
+                    const finalAngle = currentAngle + flapAngle * 0.3;
+
+                    const len = featherLen * (0.85 + 0.15 * flap);
+                    const w = featherWidth * (0.8 + 0.2 * flap);
+
+                    const x = cx + Math.sin(finalAngle) * 25 * t;
+                    const y = cy - 20 - Math.cos(finalAngle) * 25 * t;
+
+                    ctx.save();
+                    ctx.translate(x, y);
+                    ctx.rotate(finalAngle);
+
+                    const gradient = ctx.createRadialGradient(0, -len * 0.4, 2, 0, -len * 0.2, len * 0.8);
+                    const baseCol = `rgba(255,255,255,${alpha * 0.9})`;
+                    const tipCol = `rgba(255,255,255,${alpha * 0.15})`;
+                    gradient.addColorStop(0, baseCol);
+                    gradient.addColorStop(0.5, baseCol);
+                    gradient.addColorStop(1, tipCol);
+
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.quadraticCurveTo(w * 0.5, -len * 0.3, w * 0.35, -len * 0.7);
+                    ctx.quadraticCurveTo(w * 0.15, -len * 0.9, 0, -len);
+                    ctx.quadraticCurveTo(-w * 0.15, -len * 0.9, -w * 0.35, -len * 0.7);
+                    ctx.quadraticCurveTo(-w * 0.5, -len * 0.3, 0, 0);
+                    ctx.closePath();
+
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+                    ctx.strokeStyle = `rgba(255,255,255,${alpha * 0.05})`;
+                    ctx.lineWidth = 0.5;
+                    ctx.stroke();
+
+                    ctx.restore();
+                }
+
+                const grad = ctx.createRadialGradient(cx, cy - 30, 10, cx, cy - 20, 190);
+                grad.addColorStop(0, 'rgba(255,255,255,0.03)');
+                grad.addColorStop(1, 'rgba(255,255,255,0)');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, 400, 400);
+            }
+
+            function animateWing() {
+                state.wingAngle += 0.022;
+                drawWing(state.wingAngle);
+                state.wingAnimId = requestAnimationFrame(animateWing);
+            }
+
+            function startLoadingAnimation() {
+                animateWing();
+            }
+
+            function stopLoadingAnimation() {
+                if (state.wingAnimId) {
+                    cancelAnimationFrame(state.wingAnimId);
+                    state.wingAnimId = null;
+                }
+                drawWing(0.5);
+            }
+
+            /* =============================================================
+               5.  LOADING SCREEN
+               ============================================================= */
+            function hideLoading() {
+                loadingScreen.classList.add('hidden');
+                app.classList.add('active');
+                stopLoadingAnimation();
+                setTimeout(() => searchInput.focus(), 500);
+            }
+
+            /* =============================================================
+               6.  CAMERA – Simplified to "Identify Drug" button
+               ============================================================= */
+            async function openCamera() {
+                try {
+                    if (state.cameraStream) {
+                        state.cameraStream.getTracks().forEach(t => t.stop());
+                        state.cameraStream = null;
+                    }
+
+                    const constraints = {
+                        video: {
+                            facingMode: 'environment',
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 },
+                        },
+                        audio: false,
+                    };
+
+                    state.cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    cameraVideo.srcObject = state.cameraStream;
+                    await cameraVideo.play();
+
+                    state.isCameraActive = true;
+                    cameraOverlay.classList.add('active');
+                    camStatus.textContent = 'Frame your drug clearly';
+                    camStatus.style.color = 'rgba(255,255,255,0.5)';
+                } catch (err) {
+                    console.error('Camera error:', err);
+                    camStatus.textContent = 'Camera access denied. Using file picker.';
+                    camStatus.style.color = '#ff8a8a';
+                    fallbackFileInput();
+                }
+            }
+
+            function fallbackFileInput() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.capture = 'environment';
+
+                input.onchange = function(e) {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    const reader = new FileReader();
+                    reader.onload = function(ev) {
+                        const dataURL = ev.target.result;
+                        const base64 = dataURL.split(',')[1];
+                        state.imageData = dataURL;
+                        state.imageDataForApi = base64;
+                        addImageMessage(dataURL);
+                        camBadge.classList.add('show');
+                        camBadge.textContent = '1';
+                        cameraOverlay.classList.remove('active');
+                        closeCamera();
+                        searchInput.focus();
+                        identifyDrug();
+                    };
+                    reader.readAsDataURL(file);
+                    document.body.removeChild(input);
+                };
+
+                document.body.appendChild(input);
+                input.click();
+            }
+
+            function closeCamera() {
+                if (state.cameraStream) {
+                    state.cameraStream.getTracks().forEach(t => t.stop());
+                    state.cameraStream = null;
+                }
+                state.isCameraActive = false;
+                cameraOverlay.classList.remove('active');
+                cameraVideo.srcObject = null;
+            }
+
+            async function captureAndIdentify() {
+                if (!state.cameraStream) return;
+
+                try {
+                    const track = state.cameraStream.getVideoTracks()[0];
+                    const settings = track.getSettings();
+                    const width = settings.width || 1280;
+                    const height = settings.height || 720;
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const canvasCtx = canvas.getContext('2d');
+                    canvasCtx.drawImage(cameraVideo, 0, 0, width, height);
+
+                    const dataURL = canvas.toDataURL('image/jpeg', 0.92);
+                    const base64Data = dataURL.split(',')[1];
+
+                    state.imageData = dataURL;
+                    state.imageDataForApi = base64Data;
+
+                    camStatus.textContent = '📸 Captured! Identifying...';
+                    camStatus.style.color = '#69db7c';
+
+                    addImageMessage(dataURL);
+                    camBadge.classList.add('show');
+                    camBadge.textContent = '1';
+
+                    setTimeout(() => {
+                        closeCamera();
+                        searchInput.focus();
+                        identifyDrug();
+                    }, 400);
+                } catch (err) {
+                    console.error('Capture error:', err);
+                    camStatus.textContent = 'Capture failed. Try again.';
+                    camStatus.style.color = '#ff6b6b';
+                }
+            }
+
+            async function identifyDrug() {
+                if (state.isProcessing) return;
+                if (!state.imageDataForApi) return;
+
+                state.isProcessing = true;
+                addTypingIndicator();
+
+                try {
+                    const responseText = await callMistralVision(state.imageDataForApi, '');
+
+                    removeTypingIndicator();
+                    addAssistantReply(responseText || 'Sorry, I could not identify the drug.');
+
+                    if (responseText) {
+                        state.conversationHistory.push({
+                            role: 'user',
+                            content: '[Drug photo]'
+                        });
+                        state.conversationHistory.push({
+                            role: 'assistant',
+                            content: responseText.slice(0, 300) + (responseText.length > 300 ? '…' : '')
+                        });
+                    }
+
+                    state.imageData = null;
+                    state.imageDataForApi = null;
+                    camBadge.classList.remove('show');
+                    searchInput.value = '';
+                    btnSend.classList.remove('show');
+                } catch (err) {
+                    removeTypingIndicator();
+                    const errorMsg = err.message || 'Unknown error';
+                    addAssistantReply(`I'm sorry, I encountered an error: ${errorMsg}. Please try again later.`);
+                    console.error('Mistral vision error:', err);
+                } finally {
+                    state.isProcessing = false;
+                }
+            }
+
+            /* =============================================================
+               7.  MESSAGES
+               ============================================================= */
+            function addImageMessage(dataURL) {
+                emptyState.style.display = 'none';
+
+                const div = document.createElement('div');
+                div.className = 'message user';
+
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                div.innerHTML = `
+                    <img src="${dataURL}" alt="Captured photo" />
+                    <span class="image-label">Photo</span>
+                    <span class="timestamp">${timeStr}</span>
+                `;
+
+                chatArea.appendChild(div);
+                scrollToBottom();
+                state.messageCount++;
+            }
+
+            function addTextMessage(text, isUser = true) {
+                emptyState.style.display = 'none';
+
+                const div = document.createElement('div');
+                div.className = `message ${isUser ? 'user' : 'assistant'}`;
+
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                if (!isUser) {
+                    div.innerHTML = `
+                        <div class="avatar">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                                <path d="M2 17l10 5 10-5" />
+                                <path d="M2 12l10 5 10-5" />
+                            </svg>
+                        </div>
+                        <div class="bubble">
+                            ${escapeHtml(text)}
+                            <span class="timestamp">${timeStr}</span>
+                        </div>
+                    `;
+                } else {
+                    div.innerHTML = `
+                        ${escapeHtml(text)}
+                        <span class="timestamp">${timeStr}</span>
+                    `;
+                }
+
+                chatArea.appendChild(div);
+                scrollToBottom();
+                state.messageCount++;
+            }
+
+            function addAssistantReply(text) {
+                emptyState.style.display = 'none';
+
+                const div = document.createElement('div');
+                div.className = 'message assistant';
+
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                const supportHtml = `
+                    <div class="support-info">
+                        <span class="label">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
+                            </svg>
+                            Customer Care Support
+                        </span>
+                        <a href="mailto:${CUSTOMER_EMAIL}">${CUSTOMER_EMAIL}</a>
+                    </div>
+                `;
+
+                div.innerHTML = `
+                    <div class="avatar">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                            <path d="M2 17l10 5 10-5" />
+                            <path d="M2 12l10 5 10-5" />
+                        </svg>
+                    </div>
+                    <div class="bubble">
+                        ${escapeHtml(text)}
+                        <span class="timestamp">${timeStr}</span>
+                        ${supportHtml}
+                    </div>
+                `;
+
+                chatArea.appendChild(div);
+                scrollToBottom();
+                state.messageCount++;
+            }
+
+            function addTypingIndicator() {
+                const div = document.createElement('div');
+                div.className = 'message assistant';
+                div.id = 'typing-indicator';
+                div.innerHTML = `
+                    <div class="avatar">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                            <path d="M2 17l10 5 10-5" />
+                            <path d="M2 12l10 5 10-5" />
+                        </svg>
+                    </div>
+                    <div class="bubble">
+                        <div class="typing-indicator">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                `;
+                chatArea.appendChild(div);
+                scrollToBottom();
+            }
+
+            function removeTypingIndicator() {
+                const typing = document.getElementById('typing-indicator');
+                if (typing) typing.remove();
+            }
+
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            function scrollToBottom() {
+                setTimeout(() => {
+                    content.scrollTop = content.scrollHeight;
+                }, 50);
+            }
+
+            /* =============================================================
+               8.  API CALLS
+               ============================================================= */
+
+            // 8a. Groq (text chat)
+            async function callGroq(userText) {
+                const messages = [];
+
+                const systemInstruction = `
+You are Plexus, a compassionate, medically trained first‑aid and drug‑confirmation assistant. Your responses must be clear, structured, and cautious. Follow these rules strictly:
+
+**1. DRUG CONFIRMATION (when a name is given):**
+- Always ask: "Was this prescribed by a physician?" 
+- Provide a clear breakdown in bullet points:
+  • **What it is used for** (main indications)
+  • **Active ingredients** (common name)
+  • **Common side effects** (most frequent)
+  • **Important interactions** (with other drugs, food, alcohol)
+  • **When to take / when to avoid** (dosage timing, contraindications)
+
+**2. FIRST AID FOR SYMPTOMS (when a symptom or condition is described):**
+- Ask clarifying questions (onset, location, severity, associated symptoms, allergies).
+- Provide a **step‑by‑step first‑aid plan** in numbered or bulleted format:
+  • Immediate actions (position, rest, hydration)
+  • What to monitor (worsening signs)
+  • When to call emergency services (red flags)
+- Always include: "This is not a substitute for professional medical care."
+
+**3. GENERAL GUIDELINES:**
+- Speak in plain language.
+- Keep responses under 500 words.
+- End with a caring reminder to consult a healthcare provider.
+
+**4. CAUTION:**
+- Never diagnose definitively; frame as "possible".
+- If life‑threatening, prioritise calling emergency services.
+                `.trim();
+
+                messages.push({ role: 'system', content: systemInstruction });
+
+                const MAX_HISTORY = 6;
+                const history = state.conversationHistory.slice(-MAX_HISTORY * 2);
+                for (const entry of history) {
+                    messages.push(entry);
+                }
+
+                messages.push({ role: 'user', content: userText });
+
+                const payload = {
+                    model: GROQ_MODEL,
+                    messages: messages,
+                    temperature: 0.65,
+                    max_tokens: 2048,
+                };
+
+                const response = await fetch(GROQ_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${GROQ_API_KEY}`,
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                if (!response.ok) {
+                    let errorMsg = `HTTP ${response.status}`;
+                    try {
+                        const errorData = await response.json();
+                        errorMsg = errorData.error?.message || errorMsg;
+                    } catch (_) { /* ignore */ }
+                    throw new Error(errorMsg);
+                }
+
+                const data = await response.json();
+                const choice = data.choices?.[0];
+                if (!choice) throw new Error('No response choices.');
+                const content = choice.message?.content;
+                if (!content) throw new Error('No response content.');
+                return content;
+            }
+
+            // 8b. Mistral vision – using Pixtral
+            async function callMistralVision(imageBase64, userText) {
+                // Build the content array: text (if any) and image
+                const contentParts = [];
+                if (userText && userText.trim().length > 0) {
+                    contentParts.push({ type: 'text', text: userText.trim() });
+                }
+                contentParts.push({
+                    type: 'image_url',
+                    image_url: {
+                        url: `data:image/jpeg;base64,${imageBase64}`
+                    }
+                });
+
+                const messages = [
+                    {
+                        role: 'system',
+                        content: `You are a drug identification expert. When given a photo of a drug, provide comprehensive information in a clear, structured format:
+
+- **Drug name** (brand and generic if possible)
+- **What it is used for** (main indications)
+- **Active ingredients**
+- **Common side effects** (list the most frequent)
+- **Serious side effects** (when to seek immediate help)
+- **Interactions** (with other drugs, food, alcohol)
+- **Dosage** (typical adult dose, when to take)
+- **Contraindications** (who should not take it)
+- **Warnings** (pregnancy, driving, etc.)
+- **First‑aid advice** if misused or overdose
+
+If the drug is not clearly identifiable, state that and ask for a clearer photo or more details.
+
+Always remind the user: This information is for educational purposes and does not replace professional medical advice. Consult a healthcare provider for personal decisions.`
+                    },
+                    {
+                        role: 'user',
+                        content: contentParts
+                    }
+                ];
+
+                const payload = {
+                    model: MISTRAL_MODEL,
+                    messages: messages,
+                    temperature: 0.4,
+                    max_tokens: 2048,
+                };
+
+                const response = await fetch(MISTRAL_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${MISTRAL_API_KEY}`,
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                if (!response.ok) {
+                    let errorMsg = `HTTP ${response.status}`;
+                    try {
+                        const errorData = await response.json();
+                        errorMsg = errorData.error?.message || errorMsg;
+                    } catch (_) { /* ignore */ }
+                    throw new Error(errorMsg);
+                }
+
+                const data = await response.json();
+                const choice = data.choices?.[0];
+                if (!choice) throw new Error('No response choices.');
+                const content = choice.message?.content;
+                if (!content) throw new Error('No response content.');
+                return content;
+            }
+
+            /* =============================================================
+               9.  SEND MESSAGES (text only)
+               ============================================================= */
+            async function sendTextMessage(text) {
+                if (state.isProcessing) return;
+                if (!text || text.trim().length === 0) return;
+
+                addTextMessage(text, true);
+                state.conversationHistory.push({
+                    role: 'user',
+                    content: text.trim()
+                });
+
+                searchInput.value = '';
+                btnSend.classList.remove('show');
+
+                state.isProcessing = true;
+                addTypingIndicator();
+
+                try {
+                    const responseText = await callGroq(text.trim());
+
+                    removeTypingIndicator();
+                    addAssistantReply(responseText || 'No response received.');
+
+                    if (responseText) {
+                        state.conversationHistory.push({
+                            role: 'assistant',
+                            content: responseText
+                        });
+                    }
+                } catch (err) {
+                    removeTypingIndicator();
+                    const errorMsg = err.message || 'Unknown error';
+                    addAssistantReply(`I'm sorry, I encountered an error: ${errorMsg}. Please try again later.`);
+                    console.error('Groq error:', err);
+                } finally {
+                    state.isProcessing = false;
+                }
+            }
+
+            /* =============================================================
+               10. HANDLE SEND (unified)
+               ============================================================= */
+            function handleSend() {
+                if (state.isProcessing) return;
+
+                const text = searchInput.value.trim();
+
+                if (state.imageDataForApi) {
+                    // Should not happen because we auto-identify, but clear just in case
+                    state.imageData = null;
+                    state.imageDataForApi = null;
+                    camBadge.classList.remove('show');
+                    searchInput.value = '';
+                    btnSend.classList.remove('show');
+                    return;
+                }
+
+                if (text) {
+                    sendTextMessage(text);
+                }
+            }
+
+            /* =============================================================
+               11. RESPONSIVE CANVAS
+               ============================================================= */
+            function resizeWingCanvas() {
+                const rect = wingCanvas.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                const w = rect.width * dpr;
+                const h = rect.height * dpr;
+
+                if (wingCanvas.width !== w || wingCanvas.height !== h) {
+                    wingCanvas.width = w;
+                    wingCanvas.height = h;
+                    if (!state.wingAnimId) {
+                        drawWing(state.wingAngle);
+                    }
+                }
+            }
+
+            /* =============================================================
+               12. EVENT BINDING
+               ============================================================= */
+            function init() {
+                startLoadingAnimation();
+
+                const loadTime = 2800 + Math.random() * 800;
+                setTimeout(hideLoading, loadTime);
+
+                btnCamera.addEventListener('click', () => {
+                    if (cameraOverlay.classList.contains('active')) {
+                        closeCamera();
+                    } else {
+                        openCamera();
+                    }
+                });
+
+                btnIdentify.addEventListener('click', captureAndIdentify);
+                btnCloseCam.addEventListener('click', closeCamera);
+
+                btnSend.addEventListener('click', handleSend);
+
+                searchInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleSend();
+                    }
+                });
+
+                searchInput.addEventListener('input', () => {
+                    if (searchInput.value.trim().length > 0) {
+                        btnSend.classList.add('show');
+                    } else {
+                        btnSend.classList.remove('show');
+                    }
+                });
+
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && cameraOverlay.classList.contains('active')) {
+                        closeCamera();
+                    }
+                });
+
+                window.addEventListener('resize', resizeWingCanvas);
+                setTimeout(resizeWingCanvas, 100);
+
+                document.addEventListener('paste', (e) => {
+                    const items = e.clipboardData?.items;
+                    if (!items) return;
+
+                    for (const item of items) {
+                        if (item.type.startsWith('image/')) {
+                            const file = item.getAsFile();
+                            if (!file) continue;
+
+                            const reader = new FileReader();
+                            reader.onload = (ev) => {
+                                const dataURL = ev.target.result;
+                                const base64 = dataURL.split(',')[1];
+                                state.imageData = dataURL;
+                                state.imageDataForApi = base64;
+                                addImageMessage(dataURL);
+                                camBadge.classList.add('show');
+                                camBadge.textContent = '1';
+                                searchInput.focus();
+                                identifyDrug();
+                            };
+                            reader.readAsDataURL(file);
+                            break;
+                        }
+                    }
+                });
+
+                document.addEventListener('dragover', (e) => e.preventDefault());
+
+                document.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    const files = e.dataTransfer?.files;
+                    if (!files) return;
+
+                    for (const file of files) {
+                        if (file.type.startsWith('image/')) {
+                            const reader = new FileReader();
+                            reader.onload = (ev) => {
+                                const dataURL = ev.target.result;
+                                const base64 = dataURL.split(',')[1];
+                                state.imageData = dataURL;
+                                state.imageDataForApi = base64;
+                                addImageMessage(dataURL);
+                                camBadge.classList.add('show');
+                                camBadge.textContent = '1';
+                                searchInput.focus();
+                                identifyDrug();
+                            };
+                            reader.readAsDataURL(file);
+                            break;
+                        }
+                    }
+                });
+
+                console.log('Plexus — Drug Confirmation & First Aid (Mistral Pixtral + Groq)');
+                console.log(`Customer Care: ${CUSTOMER_EMAIL}`);
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+
+        })();
+    </script>
+
+</body>
+</html>
